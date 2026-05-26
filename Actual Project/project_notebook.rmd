@@ -1,0 +1,13 @@
+---
+title: "Final Project"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 2
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Final Project: Dataset to select
