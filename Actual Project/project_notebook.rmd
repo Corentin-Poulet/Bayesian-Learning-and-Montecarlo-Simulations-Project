@@ -10,4 +10,37 @@ editor_options:
     wrap: 72
 ---
 
-# Final Project: Dataset to select
+# Final Project: JFK Passengers
+
+**Source.**
+<https://github.com/alan-turing-institute/TCPD/tree/master/datasets/jfk_passengers>
+
+**Data.** The Port Authority collects monthly data on domestic and
+international passengers, cargo, flights, and aircraft equipment types
+from each carrier operating at PANYNJ airports.
+
+**Task.** This dataset can be analyzed using a change-point model with
+different means before and after the change point, possibly including a
+linear drift after the change point. A basic model is
+$$ y_t = \mu_t + \epsilon_t, $$ where
+$$ \epsilon_t \sim {N}(0,\sigma_t^2), $$ and
+$$ \mu_t = \mu_1,\quad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, $$
+while
+$$ \mu_t = \mu_2,\quad \sigma_t = \sigma_2 \qquad \text{if } t > \tau. $$
+Here $\tau$ is an unknown change-point parameter.
+
+More complex change-point models may also be considered and discussed.
+Time series models are encouraged; for example, one may include
+different trends and different variances before and after the change
+point.
+
+```{r}
+JFK <- read.csv("JFK.csv") 
+head(JFK) 
+dim(JFK)  
+JFK$time__raw=as.Date(paste(JFK$time__raw,"-01",sep="")) 
+plot(JFK$time__raw,JFK$series__raw,xlab="time",ylab="pass",main="JFK") 
+plot(JFK$time__raw[1:36],JFK$series__raw[1:36],xlab="time",ylab="pass",main="JFK")
+```
+
+## 

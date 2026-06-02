@@ -1,5 +1,6 @@
 \documentclass[12pt, titlepage]{article}
 
+
 % Language setting
 \usepackage[english]{babel}
 
@@ -15,9 +16,15 @@
 \usepackage{titlesec}
 \usepackage{titletoc}
 
+\renewcommand{\thesection}{\Roman{section}}
+\renewcommand{\thesubsection}{\arabic{subsection}}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+\renewcommand{\thetable}{\thesection.\arabic{table}}
+
 \setcounter{tocdepth}{5}
 \title{Bayesian Learning and Monte Carlo Simulations: Final Project Report}
-\author{Poulet Corentin, (add other authors if necessary)}
+\subtitle{JFK Passengers Analysis}
+\author{Carlo Maria Balma, Corentin Poulet, Leonardo Stefanelli}
 
 \begin{document}
 
@@ -30,8 +37,12 @@
 \newpage
 \section{Introduction and presentation of the dataset}
 \section{Definitions of the different models}
+\subsection{Switching Model}
+\subsection{Time Series Models}
 \section{Model Selection}
 \section{Analysis of the selected models}
+\subsection{Switching Model}
+\subsection{Time Series Model}
 \section{Test of predictions}
 \section{Conclusion}
 \newpage
