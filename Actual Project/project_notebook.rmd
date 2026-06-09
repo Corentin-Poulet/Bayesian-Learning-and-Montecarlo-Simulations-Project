@@ -40,7 +40,12 @@ head(JFK)
 dim(JFK)  
 JFK$time__raw=as.Date(paste(JFK$time__raw,"-01",sep="")) 
 plot(JFK$time__raw,JFK$series__raw,xlab="time",ylab="pass",main="JFK") 
+plot(JFK$time__raw[1:13],JFK$series__raw[1:13],xlab="time",ylab="pass",main="JFK")
 plot(JFK$time__raw[1:36],JFK$series__raw[1:36],xlab="time",ylab="pass",main="JFK")
+plot(JFK$time__raw[400:468],JFK$series__raw[400:468],xlab="time",ylab="pass",main="JFK")
+plot(JFK$time__raw[300:468],JFK$series__raw[300:468],xlab="time",ylab="pass",main="JFK")
+plot(JFK$time__raw[275:400],JFK$series__raw[275:400],xlab="time",ylab="pass",main="JFK")
+
 ```
 
 ## 

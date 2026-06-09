@@ -15,6 +15,9 @@
 \usepackage{blindtext}
 \usepackage{titlesec}
 \usepackage{titletoc}
+\usepackage{graphicx}	
+\usepackage{geometry}
+\usepackage{float}
 
 \renewcommand{\thesection}{\Roman{section}}
 \renewcommand{\thesubsection}{\arabic{subsection}}
@@ -35,15 +38,197 @@
 
 \newpage
 \section{Introduction and presentation of the dataset}
+
+\subsection{Introduction}
+
+This project aims to analyse a dataset from the Alan Turing Institute with data collected by the Port Authority of New York and New Jersey (PANYNJ). This dataset contains monthly data from the John F. Kennedy (JFK) International Airport in New York City (New York, USA), which concerns data on domestic and international passengers, cargo, flights, and aircraft equipment types from each carrier operating at PANYNJ airports. The dataset is constituted by two columns: the first one
+contains the month and the year of the observation (format: year-month) from 1977 to 2015, while the second one contains the total number of passengers (domestic and international) for each month. \\
+
+\subsection{Preliminary analysis of the dataset}
+
+The first analysis we can do on the dataset is plotting the number of passengers over time for visualization purposes. We can identify two different plots, one relative to one year and the global trend of the data during the 40 years of recording. \\
+
+First, the one-year-pltting is on the next figure:\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{year_plot.png}
+    \caption{Evolution for the first 3 years}
+    \label{fig:enter-label}
+\end{figure}
+
+Here we can see that there is a strong seasonality in the data (during the summer there are way more passengers than in Winter), this observation will be useful for the more complex models. \\
+
+For the global data, the plot is the figure below:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{global_plot.png}
+    \caption{Number of passengers across the year in the JFK Airport}
+    \label{fig:enter-label}
+\end{figure}
+
+Here we can identify a change in the global trend at the beginning of the 2000's. In early 2000's, we can identify a transition between two regimes. The purpose of this study is to fit a model on this transition and to analyse it. \\
+
+During the project, we tried different kind of models based on the Changepoint Model, a model to take into account a change in the global trend of the data. We tried some models from the simplest changepoint model to more complex models and Time Series models.\\
+
 \section{Definitions of the different models}
-\subsection{Switching Model}
-\subsection{Time Series Models}
-\section{Model Selection}
-\section{Analysis of the selected models}
-\subsection{Switching Model}
+\subsection{Simple Model}
+
+The first approach is the simplest possible in term of changepoint model. 
+
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(0,\sigma_0^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \mu_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter and } \sigma_0 \text{ a constant.}
+\end{displaymath}
+
+
+
+
+
+
+\subsection{Switching Variance Model}
+
+The second approach is a slighlty more complex model with a switching variance too
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(0,\sigma_t^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \mu_2 \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter.}
+\end{displaymath}
+
+\subsection{Linear Drift Model}
+
+Another possible model is to model the second regime with a linear regression: 
+
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(0,\sigma_t^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter.}
+\end{displaymath}
+\subsection{Periodic Model}
+At this point of this study we did not take into account the periodicity in the residuals of the data ($\epsilon_t$). Here is a model based on periodic function: 
+
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(\alpha \cos(\frac{2\pi m}{12}) + \gamma \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter.}
+\end{displaymath}
+
 \subsection{Time Series Model}
+In this section we explore additional time series model, we try first an ARX(1) model
+
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(a\epsilon_{t-1}+\alpha \cos(\frac{2\pi m}{12}) + \gamma \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter.}
+\end{displaymath}\\
+
+If time, try a SARMA process instead of a ARX.
+
+\begin{displaymath}
+ y_t = \mu_t + \epsilon_t, \\ 
+\end{displaymath}
+
+\begin{displaymath}
+ \text{where } \epsilon_t \sim {N}(SARMA(p,q,P,Q),\sigma_t^2), \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+\end{displaymath}
+
+\begin{displaymath}
+ \text{Here } \tau \text{ is an unknown change-point parameter.}
+\end{displaymath}\\
+
+\section{Model Selection}
+
+Comparing the metrics for all models (DIC, WAIC, AIC, BIC...)
+\section{Analysis of the selected models}
+
+Here we can give an overview of the selected model (quick summary of what is the model and how it behaves in details)
 \section{Test of predictions}
+
+test on unseen data
+
 \section{Conclusion}
+
+conclusion
 \newpage
 \section{Appendix}
 \end{document}
