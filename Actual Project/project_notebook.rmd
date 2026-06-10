@@ -48,6 +48,32 @@ plot(JFK$time__raw[400:468],JFK$series__raw[400:468],xlab="time",ylab="pass",mai
 plot(JFK$time__raw[300:468],JFK$series__raw[300:468],xlab="time",ylab="pass",main="JFK")
 plot(JFK$time__raw[275:400],JFK$series__raw[275:400],xlab="time",ylab="pass",main="JFK")
 
+#we try to average over the year to see the trend without the seasonal oscillation
+
+n_years <- length(JFK$time__raw) / 12
+
+years <-  1977:2015
+
+#avraging over the months
+
+annual_mean <- tapply(
+  JFK$series__raw,
+  rep(years, each=12),
+  mean
+)
+
+#plot
+
+plot(
+  1977:2015,
+  annual_mean,
+  type="b",
+  xlab = "year",
+  ylab = "average passengers",
+  main = "average annual passenger JFK"
+  
+)
+
 ```
 
 ## Simple Changepoint Model
