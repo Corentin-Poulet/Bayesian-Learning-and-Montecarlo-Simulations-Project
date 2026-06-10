@@ -117,25 +117,20 @@ mtrueT=c(rep(2354015,330),rep(4070000,168))
 plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
 lines(c(1:468),JFK$series__raw,type="p",col="orange")
 lines(c(1:468),JFK$series__raw,type="l",col="orange")
-abline(h=ssCP[1,"2.5%"],lty=2,col="blue",lwd=1.0)
-abline(h=ssCP[1,"97.5%"],lty=2,col="blue",lwd=1.0)
-abline(h=ssCP[468,"2.5%"],lty=2,col="blue",lwd=1.0)
-abline(h=ssCP[468,"97.5%"],lty=2,col="blue",lwd=1.0)
-abline(h=ssCP[469,"2.5%"],lty=2,col="pink",lwd=1.0)
-abline(h=ssCP[469,"97.5%"],lty=2,col="pink",lwd=1.0)
-abline(h=ssCP[936,"2.5%"],lty=2,col="green",lwd=1.0)
-abline(h=ssCP[936,"97.5%"],lty=2,col="green",lwd=1.0)
-points(ssCP[1:468,"mean"],col="magenta",lwd=2.0) 
+lines(c(1:468),ssCP[1:468,"2.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP[1:468,"97.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP[469:936,"2.5%"],type="l",lty=2,col="green")
+lines(c(1:468),ssCP[469:936,"97.5%"],type="l",lty=2,col="green")
+points(ssCP[1:468,"mean"],col="magenta",lwd=0.75) 
 abline(v=tmean,col="red",lwd=1.5)
 abline(v=q1,col="red",lwd=1.5,lty = 3)
 abline(v=q2,col="red",lwd=1.5,lty = 3)
 labels=c(paste0('Data'),
            paste0('Model'),
            paste0('Credible interval'),
-           paste0('Predictive Interval 1'),
-           paste0('Predictive Interval 2'),
+           paste0('Predictive Interval'),
            paste0('Changepoint'))
-legend("topleft", legend=labels, col=c("orange", "magenta","blue", "pink", "green", "red"), lty = 1, cex=0.75)
+legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
 
 #plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
 #points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
@@ -150,4 +145,105 @@ plot(sampCP_mcmc,'xpred[1]')
 ```
 
 ```         
+```
+
+```{r}
+sampCP_mcmc$DIC
+loglik <- sampCP_mcmc$sims.list$LogLik  # model with change point
+
+waic <- waic(loglik)
+
+waic
+```
+
+```{r}
+modelChangePoint_lin <-
+"model{
+  #
+  for(t in 1:n){
+    d[t]<-step(Tau-t)
+  }
+  # Likelihood
+  for(i in 1:n){
+    x[i]   ~ dnorm(mu[i],sinv)
+    mu[i] <- alpha[J[i]]+beta[J[i]]*i 
+    J[i]<- d[i]+1 # move to (0,1) in (1,2)
+    LogLik[i] <- log(dnorm( x[i],mu[i],sinv))  # this is for computing the WAIC, see later
+    xpred[i] ~ dnorm(mu[i], sinv)
+  }
+  
+  
+  # Prior for d[i]
+  Tau ~  dunif(1,n+10)
+  # Prior for beta
+
+  alpha[1] ~ dnorm(0,0.000000000001)
+  alpha[2] ~ dnorm(0,0.000000000001)
+  beta[1] ~ dnorm(0,0.0000000000001)
+  beta[2] ~ dnorm(0,0.0000000000001)
+  sinv ~  dunif(0,10)
+  
+}"
+```
+
+```{r}
+myData=list(x=JFK$series__raw,n=length(JFK$series__raw)) # 
+
+sampCP_mcmc_lin <- jags(model.file=textConnection(modelChangePoint_lin),data=myData,
+                     parameters.to.save=c("mu","xpred","alpha","beta","Tau","J","LogLik", "sinv"), 
+                     n.adapt=1000, n.iter=10000,n.chains = 2,n.burnin = 2000)
+
+
+
+
+ssCP=summary(sampCP_mcmc_lin)
+```
+
+```{r}
+q1=ssCP["Tau",c("2.5%")]
+q2=ssCP["Tau",c("97.5%")]
+tmean=ssCP["Tau",c("mean")]
+mtrueT=c(rep(2354015,330),rep(4070000,168))
+
+plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
+lines(c(1:468),JFK$series__raw,type="p",col="orange")
+lines(c(1:468),JFK$series__raw,type="l",col="orange")
+lines(c(1:468),ssCP[1:468,"2.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP[1:468,"97.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP[469:936,"2.5%"],type="l",lty=2,col="green")
+lines(c(1:468),ssCP[469:936,"97.5%"],type="l",lty=2,col="green")
+points(ssCP[1:468,"mean"],col="magenta",lwd=1.0) 
+abline(v=tmean,col="red",lwd=1.5)
+abline(v=q1,col="red",lwd=1.5,lty = 3)
+abline(v=q2,col="red",lwd=1.5,lty = 3)
+labels=c(paste0('Data'),
+           paste0('Model'),
+           paste0('Credible interval'),
+           paste0('Predictive Interval'),
+           paste0('Changepoint'))
+legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
+
+#plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+#points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+
+#abline(v=tmean,col="red",lwd=1.5)
+#abline(v=q1,col="red",lwd=1.5,lty = 3)
+#abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_lin,"Tau")
+plot(sampCP_mcmc_lin,'mu[1]')
+plot(sampCP_mcmc_lin,'mu[468]')
+plot(sampCP_mcmc_lin,'xpred[1]')
+plot(sampCP_mcmc_lin,'alpha[1]')
+plot(sampCP_mcmc_lin,'alpha[2]')
+plot(sampCP_mcmc_lin,'beta[1]')
+plot(sampCP_mcmc_lin,'beta[2]')
+```
+
+```{r}
+sampCP_mcmc_lin$DIC
+loglik <- sampCP_mcmc_lin$sims.list$LogLik  # model with change point
+
+waic <- waic(loglik)
+
+waic
 ```

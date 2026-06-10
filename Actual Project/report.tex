@@ -138,11 +138,11 @@ Another possible model is to model the second regime with a linear regression:
 \end{displaymath}
 
 \begin{displaymath}
- \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+ \text{and }  \mu_t = \alpha_1+\beta_1 X \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+ \text{while } \mu_t = \alpha_2+\beta_2 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
 \end{displaymath}
 
 \begin{displaymath}
@@ -156,15 +156,15 @@ At this point of this study we did not take into account the periodicity in the 
 \end{displaymath}
 
 \begin{displaymath}
- \text{where } \epsilon_t \sim {N}(\alpha \cos(\frac{2\pi m}{12}) + \gamma \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
+ \text{where } \epsilon_t \sim {N}(\gamma \cos(\frac{2\pi m}{12}) + \delta \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+ \text{and }  \mu_t = \alpha_1+\beta_1 X \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+ \text{while } \mu_t = \alpha_2+\beta_2 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
 \end{displaymath}
 
 \begin{displaymath}
@@ -179,15 +179,15 @@ In this section we explore additional time series model, we try first an ARX(1) 
 \end{displaymath}
 
 \begin{displaymath}
- \text{where } \epsilon_t \sim {N}(a\epsilon_{t-1}+\alpha \cos(\frac{2\pi m}{12}) + \gamma \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
+ \text{where } \epsilon_t \sim {N}(a\epsilon_{t-1}+\gamma \cos(\frac{2\pi m}{12}) + \delta \sin(\frac{2\pi m}{12}),\sigma_t^2), \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+ \text{and }  \mu_t = \alpha_1+\beta_1 X \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+ \text{while } \mu_t = \alpha_2+\beta_2 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
 \end{displaymath}
 
 \begin{displaymath}
@@ -205,11 +205,11 @@ If time, try a SARMA process instead of a ARX.
 \end{displaymath}
 
 \begin{displaymath}
- \text{and }  \mu_t = \mu_1 \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
+ \text{and }  \mu_t = \alpha_1+\beta_1 X \qquad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, \\
 \end{displaymath}
 
 \begin{displaymath}
- \text{while } \mu_t = \beta_0+\beta_1 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
+ \text{while } \mu_t = \alpha_2+\beta_2 X \qquad \sigma_t = \sigma_2 \qquad \text{if } t > \tau.\\
 \end{displaymath}
 
 \begin{displaymath}
@@ -218,7 +218,7 @@ If time, try a SARMA process instead of a ARX.
 
 \section{Model Selection}
 
-Comparing the metrics for all models (DIC, WAIC, AIC, BIC...)
+Comparing the metrics for all models (DIC, WAIC)
 \section{Analysis of the selected models}
 
 Here we can give an overview of the selected model (quick summary of what is the model and how it behaves in details)
