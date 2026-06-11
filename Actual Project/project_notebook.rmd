@@ -166,7 +166,7 @@ legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red
 #abline(v=q2,col="red",lwd=1.5,lty = 3)
 plot(sampCP_mcmc,"Tau")
 plot(sampCP_mcmc,'mu[1]')
-plot(sampCP_mcmc,'mu[468]')
+plot(sampCP_mcmc,'mu[329]')
 plot(sampCP_mcmc,'xpred[1]')
 ```
 
@@ -176,6 +176,97 @@ plot(sampCP_mcmc,'xpred[1]')
 ```{r}
 sampCP_mcmc$DIC
 loglik <- sampCP_mcmc$sims.list$LogLik  # model with change point
+
+waic <- waic(loglik)
+
+waic
+
+```
+
+```{r}
+modelChangePoint_2v <-
+"model{
+  #
+  for(t in 1:n){
+    d[t]<-step(Tau-t)
+  }
+  # Likelihood
+  for(i in 1:n){
+    x[i]   ~ dnorm(mu[i],sinv[i])
+    sinv[i] <- sinv_p[J[i]]
+    mu[i] <- m[J[i]] 
+    J[i]<- d[i]+1 # move to (0,1) in (1,2)
+    LogLik[i] <- log(dnorm( x[i],mu[i],sinv[i]))  # this is for computing the WAIC, see later
+    #predictive
+    xpred[i] ~ dnorm(mu[i], sinv[i])
+  }
+  
+  
+  # Prior for d[i]
+  Tau ~  dunif(1,n+10)
+  # Prior for beta
+  m[1] ~ dnorm(2500000,0.0000000000001)
+  m[2] ~ dnorm(4000000,0.0000000000001)
+  sinv_p[1] ~  dunif(0,10)
+  sinv_p[2] ~  dunif(0,10)
+
+  
+}"
+
+```
+
+```{r}
+myData=list(x=JFK$series__raw,n=length(JFK$series__raw)) # 
+
+sampCP_mcmc_2v <- jags(model.file=textConnection(modelChangePoint_2v),data=myData,
+                     parameters.to.save=c("mu","xpred","Tau","J","LogLik", "sinv"), 
+                     n.adapt=1000, n.iter=10000,n.chains = 2,n.burnin = 2000)
+
+
+
+
+ssCP_2v=summary(sampCP_mcmc_2v)
+```
+
+```{r}
+q1=ssCP_2v["Tau",c("2.5%")]
+q2=ssCP_2v["Tau",c("97.5%")]
+tmean=ssCP_2v["Tau",c("mean")]
+mtrueT=c(rep(2354015,330),rep(4070000,168))
+
+plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
+lines(c(1:468),JFK$series__raw,type="p",col="orange")
+lines(c(1:468),JFK$series__raw,type="l",col="orange")
+lines(c(1:468),ssCP_2v[1:468,"2.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP_2v[1:468,"97.5%"],type="l",lty=2,col="blue")
+lines(c(1:468),ssCP_2v[469:936,"2.5%"],type="l",lty=2,col="green")
+lines(c(1:468),ssCP_2v[469:936,"97.5%"],type="l",lty=2,col="green")
+points(ssCP_2v[1:468,"mean"],col="magenta",lwd=0.75) 
+abline(v=tmean,col="red",lwd=1.5)
+abline(v=q1,col="red",lwd=1.5,lty = 3)
+abline(v=q2,col="red",lwd=1.5,lty = 3)
+labels=c(paste0('Data'),
+           paste0('Model'),
+           paste0('Credible interval'),
+           paste0('Predictive Interval'),
+           paste0('Changepoint'))
+legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
+
+#plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+#points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+
+#abline(v=tmean,col="red",lwd=1.5)
+#abline(v=q1,col="red",lwd=1.5,lty = 3)
+#abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_2v,"Tau")
+plot(sampCP_mcmc_2v,'mu[1]')
+plot(sampCP_mcmc_2v,'mu[329]')
+plot(sampCP_mcmc_2v,'xpred[1]')
+```
+
+```{r}
+sampCP_mcmc_2v$DIC
+loglik <- sampCP_mcmc_2v$sims.list$LogLik  # flat model with change point and 2 variances
 
 waic <- waic(loglik)
 
@@ -191,11 +282,12 @@ modelChangePoint_lin <-
   }
   # Likelihood
   for(i in 1:n){
-    x[i]   ~ dnorm(mu[i],sinv)
+    x[i]   ~ dnorm(mu[i],sinv[i])
+    sinv[i] <- sinv_p[J[i]]
     mu[i] <- alpha[J[i]]+beta[J[i]]*i 
     J[i]<- d[i]+1 # move to (0,1) in (1,2)
-    LogLik[i] <- log(dnorm( x[i],mu[i],sinv))  # this is for computing the WAIC, see later
-    xpred[i] ~ dnorm(mu[i], sinv)
+    LogLik[i] <- log(dnorm( x[i],mu[i],sinv[i]))  # this is for computing the WAIC, see later
+    xpred[i] ~ dnorm(mu[i], sinv[i])
   }
   
   
@@ -207,7 +299,8 @@ modelChangePoint_lin <-
   alpha[2] ~ dnorm(0,0.000000000001)
   beta[1] ~ dnorm(0,0.0000000000001)
   beta[2] ~ dnorm(0,0.0000000000001)
-  sinv ~  dunif(0,10)
+  sinv_p[1] ~  dunif(0,10)
+  sinv_p[2] ~  dunif(0,10)
   
 }"
 ```
@@ -257,7 +350,7 @@ legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red
 #abline(v=q2,col="red",lwd=1.5,lty = 3)
 plot(sampCP_mcmc_lin,"Tau")
 plot(sampCP_mcmc_lin,'mu[1]')
-plot(sampCP_mcmc_lin,'mu[468]')
+plot(sampCP_mcmc_lin,'mu[328]')
 plot(sampCP_mcmc_lin,'xpred[1]')
 plot(sampCP_mcmc_lin,'alpha[1]')
 plot(sampCP_mcmc_lin,'alpha[2]')
