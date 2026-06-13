@@ -22,7 +22,7 @@ from each carrier operating at PANYNJ airports.
 **Task.** This dataset can be analyzed using a change-point model with
 different means before and after the change point, possibly including a
 linear drift after the change point. A basic model is
-$$ y_t = \mu_t + \epsilon_t, $$ where
+$$ y_t = \mu_t + \epsilon_t, $$ where\*
 $$ \epsilon_t \sim {N}(0,\sigma_t^2), $$ and
 $$ \mu_t = \mu_1,\quad \sigma_t = \sigma_1 \qquad \text{if } t \leq \tau, $$
 while
@@ -35,48 +35,48 @@ different trends and different variances before and after the change
 point.
 
 ```{r}
-rm(list=ls())
-JFK <- read.csv("JFK.csv") 
+rm(list = ls())
+JFK <- read.csv("JFK.csv")
 head(JFK)
 tail(JFK)
-dim(JFK)  
-JFK$time__raw=as.Date(paste(JFK$time__raw,"-01",sep="")) 
-plot(JFK$time__raw,JFK$series__raw,xlab="time",ylab="pass",main="JFK") 
-plot(JFK$time__raw[1:13],JFK$series__raw[1:13],xlab="time",ylab="pass",main="JFK")
-plot(JFK$time__raw[1:36],JFK$series__raw[1:36],xlab="time",ylab="pass",main="JFK")
-plot(JFK$time__raw[400:468],JFK$series__raw[400:468],xlab="time",ylab="pass",main="JFK")
-plot(JFK$time__raw[300:468],JFK$series__raw[300:468],xlab="time",ylab="pass",main="JFK")
-plot(JFK$time__raw[275:400],JFK$series__raw[275:400],xlab="time",ylab="pass",main="JFK")
+dim(JFK)
+JFK$time__raw <- as.Date(paste(JFK$time__raw, "-01", sep = ""))
+plot(JFK$time__raw, JFK$series__raw, xlab = "time", ylab = "pass", main = "JFK")
+plot(JFK$time__raw[1:13], JFK$series__raw[1:13], xlab = "time", ylab = "pass", main = "JFK")
+plot(JFK$time__raw[1:36], JFK$series__raw[1:36], xlab = "time", ylab = "pass", main = "JFK")
+plot(JFK$time__raw[400:468], JFK$series__raw[400:468], xlab = "time", ylab = "pass", main = "JFK")
+plot(JFK$time__raw[300:468], JFK$series__raw[300:468], xlab = "time", ylab = "pass", main = "JFK")
+plot(JFK$time__raw[275:400], JFK$series__raw[275:400], xlab = "time", ylab = "pass", main = "JFK")
 
-#we try to average over the year to see the trend without the seasonal oscillation
+# we try to average over the year to see the trend without the seasonal oscillation
 
 n_years <- length(JFK$time__raw) / 12
 
-years <-  1977:2015
+years <- 1977:2015
 
-#avraging over the months
+# avraging over the months
 
 annual_mean <- tapply(
   JFK$series__raw,
-  rep(years, each=12),
+  rep(years, each = 12),
   mean
 )
 
-#plot
+# plot
 
 plot(
   1977:2015,
   annual_mean,
-  type="b",
+  type = "b",
   xlab = "year",
   ylab = "average passengers",
   main = "average annual passenger JFK"
-  
 )
-
 ```
 
 ## Simple Changepoint Model
+
+$$ y_t = \mu_t + \epsilon $$
 
 ```{r}
 mean(JFK$series__raw[1:350])
@@ -94,7 +94,7 @@ library(loo)
 
 ```{r}
 modelChangePoint <-
-"model{
+  "model{
   #
   for(t in 1:n){
     d[t]<-step(Tau-t)
@@ -102,90 +102,91 @@ modelChangePoint <-
   # Likelihood
   for(i in 1:n){
     x[i]   ~ dnorm(mu[i],sinv)
-    mu[i] <- m[J[i]] 
+    mu[i] <- m[J[i]]
     J[i]<- d[i]+1 # move to (0,1) in (1,2)
     LogLik[i] <- log(dnorm( x[i],mu[i],sinv))  # this is for computing the WAIC, see later
     #predictive
     xpred[i] ~ dnorm(mu[i], sinv)
   }
-  
-  
+
+
   # Prior for d[i]
   Tau ~  dunif(1,n+10)
   # Prior for beta
   m[1] ~ dnorm(2500000,0.0000000000001)
   m[2] ~ dnorm(4000000,0.0000000000001)
   sinv ~  dunif(0,10)
-  
+
 }"
 ```
 
 ```{r}
-myData=list(x=JFK$series__raw,n=length(JFK$series__raw)) # 
+myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 
-sampCP_mcmc <- jags(model.file=textConnection(modelChangePoint),data=myData,
-                     parameters.to.save=c("mu","xpred","Tau","J","LogLik", "sinv"), 
-                     n.adapt=1000, n.iter=10000,n.chains = 2,n.burnin = 2000)
+sampCP_mcmc <- jags(
+  model.file = textConnection(modelChangePoint), data = myData,
+  parameters.to.save = c("mu", "xpred", "Tau", "J", "LogLik", "sinv"),
+  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+)
 
 
-
-
-ssCP=summary(sampCP_mcmc)
-
+ssCP <- summary(sampCP_mcmc)
 ```
 
 ```{r}
-q1=ssCP["Tau",c("2.5%")]
-q2=ssCP["Tau",c("97.5%")]
-tmean=ssCP["Tau",c("mean")]
-mtrueT=c(rep(2354015,330),rep(4070000,168))
+q1 <- ssCP["Tau", c("2.5%")]
+q2 <- ssCP["Tau", c("97.5%")]
+tmean <- ssCP["Tau", c("mean")]
+mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
 
-plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
-lines(c(1:468),JFK$series__raw,type="p",col="orange")
-lines(c(1:468),JFK$series__raw,type="l",col="orange")
-lines(c(1:468),ssCP[1:468,"2.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP[1:468,"97.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP[469:936,"2.5%"],type="l",lty=2,col="green")
-lines(c(1:468),ssCP[469:936,"97.5%"],type="l",lty=2,col="green")
-points(ssCP[1:468,"mean"],col="magenta",lwd=0.75) 
-abline(v=tmean,col="red",lwd=1.5)
-abline(v=q1,col="red",lwd=1.5,lty = 3)
-abline(v=q2,col="red",lwd=1.5,lty = 3)
-labels=c(paste0('Data'),
-           paste0('Model'),
-           paste0('Credible interval'),
-           paste0('Predictive Interval'),
-           paste0('Changepoint'))
-legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
+lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
+lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssCP[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssCP[1:468, "mean"], col = "magenta", lwd = 0.75)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+  paste0("Data"),
+  paste0("Model"),
+  paste0("Credible interval"),
+  paste0("Predictive Interval"),
+  paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
 
-#plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
-#points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
 
-#abline(v=tmean,col="red",lwd=1.5)
-#abline(v=q1,col="red",lwd=1.5,lty = 3)
-#abline(v=q2,col="red",lwd=1.5,lty = 3)
-plot(sampCP_mcmc,"Tau")
-plot(sampCP_mcmc,'mu[1]')
-plot(sampCP_mcmc,'mu[329]')
-plot(sampCP_mcmc,'xpred[1]')
-```
-
-```         
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc, "Tau")
+plot(sampCP_mcmc, "mu[1]")
+plot(sampCP_mcmc, "mu[329]")
+plot(sampCP_mcmc, "xpred[1]")
 ```
 
 ```{r}
 sampCP_mcmc$DIC
-loglik <- sampCP_mcmc$sims.list$LogLik  # model with change point
+loglik <- sampCP_mcmc$sims.list$LogLik # model with change point
 
 waic <- waic(loglik)
 
 waic
-
 ```
+
+## Switching variance
+
+$$ y_t = \mu_t + \epsilon_t $$
 
 ```{r}
 modelChangePoint_2v <-
-"model{
+  "model{
   #
   for(t in 1:n){
     d[t]<-step(Tau-t)
@@ -194,14 +195,14 @@ modelChangePoint_2v <-
   for(i in 1:n){
     x[i]   ~ dnorm(mu[i],sinv[i])
     sinv[i] <- sinv_p[J[i]]
-    mu[i] <- m[J[i]] 
+    mu[i] <- m[J[i]]
     J[i]<- d[i]+1 # move to (0,1) in (1,2)
     LogLik[i] <- log(dnorm( x[i],mu[i],sinv[i]))  # this is for computing the WAIC, see later
     #predictive
     xpred[i] ~ dnorm(mu[i], sinv[i])
   }
-  
-  
+
+
   # Prior for d[i]
   Tau ~  dunif(1,n+10)
   # Prior for beta
@@ -210,72 +211,77 @@ modelChangePoint_2v <-
   sinv_p[1] ~  dunif(0,10)
   sinv_p[2] ~  dunif(0,10)
 
-  
+
 }"
-
 ```
 
 ```{r}
-myData=list(x=JFK$series__raw,n=length(JFK$series__raw)) # 
+myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 
-sampCP_mcmc_2v <- jags(model.file=textConnection(modelChangePoint_2v),data=myData,
-                     parameters.to.save=c("mu","xpred","Tau","J","LogLik", "sinv"), 
-                     n.adapt=1000, n.iter=10000,n.chains = 2,n.burnin = 2000)
+sampCP_mcmc_2v <- jags(
+  model.file = textConnection(modelChangePoint_2v), data = myData,
+  parameters.to.save = c("mu", "xpred", "Tau", "J", "LogLik", "sinv"),
+  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+)
 
 
-
-
-ssCP_2v=summary(sampCP_mcmc_2v)
+ssCP_2v <- summary(sampCP_mcmc_2v)
 ```
 
 ```{r}
-q1=ssCP_2v["Tau",c("2.5%")]
-q2=ssCP_2v["Tau",c("97.5%")]
-tmean=ssCP_2v["Tau",c("mean")]
-mtrueT=c(rep(2354015,330),rep(4070000,168))
+q1 <- ssCP_2v["Tau", c("2.5%")]
+q2 <- ssCP_2v["Tau", c("97.5%")]
+tmean <- ssCP_2v["Tau", c("mean")]
+mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
 
-plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
-lines(c(1:468),JFK$series__raw,type="p",col="orange")
-lines(c(1:468),JFK$series__raw,type="l",col="orange")
-lines(c(1:468),ssCP_2v[1:468,"2.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP_2v[1:468,"97.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP_2v[469:936,"2.5%"],type="l",lty=2,col="green")
-lines(c(1:468),ssCP_2v[469:936,"97.5%"],type="l",lty=2,col="green")
-points(ssCP_2v[1:468,"mean"],col="magenta",lwd=0.75) 
-abline(v=tmean,col="red",lwd=1.5)
-abline(v=q1,col="red",lwd=1.5,lty = 3)
-abline(v=q2,col="red",lwd=1.5,lty = 3)
-labels=c(paste0('Data'),
-           paste0('Model'),
-           paste0('Credible interval'),
-           paste0('Predictive Interval'),
-           paste0('Changepoint'))
-legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
+lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
+lines(c(1:468), ssCP_2v[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP_2v[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP_2v[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssCP_2v[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssCP_2v[1:468, "mean"], col = "magenta", lwd = 0.75)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+  paste0("Data"),
+  paste0("Model"),
+  paste0("Credible interval"),
+  paste0("Predictive Interval"),
+  paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
 
-#plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
-#points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
 
-#abline(v=tmean,col="red",lwd=1.5)
-#abline(v=q1,col="red",lwd=1.5,lty = 3)
-#abline(v=q2,col="red",lwd=1.5,lty = 3)
-plot(sampCP_mcmc_2v,"Tau")
-plot(sampCP_mcmc_2v,'mu[1]')
-plot(sampCP_mcmc_2v,'mu[329]')
-plot(sampCP_mcmc_2v,'xpred[1]')
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_2v, "Tau")
+plot(sampCP_mcmc_2v, "mu[1]")
+plot(sampCP_mcmc_2v, "mu[329]")
+plot(sampCP_mcmc_2v, "xpred[1]")
 ```
 
 ```{r}
 sampCP_mcmc_2v$DIC
-loglik <- sampCP_mcmc_2v$sims.list$LogLik  # flat model with change point and 2 variances
+loglik <- sampCP_mcmc_2v$sims.list$LogLik # flat model with change point and 2 variances
 
 waic <- waic(loglik)
 
 waic
 ```
 
+## Linear Drift
+
+$$ y_t = \mu_t + \epsilon_t $$ where $$ \mu_t = \alpha_t + \beta_t X $$
+
 ```{r}
 modelChangePoint_lin <-
-"model{
+  "model{
   #
   for(t in 1:n){
     d[t]<-step(Tau-t)
@@ -284,13 +290,13 @@ modelChangePoint_lin <-
   for(i in 1:n){
     x[i]   ~ dnorm(mu[i],sinv[i])
     sinv[i] <- sinv_p[J[i]]
-    mu[i] <- alpha[J[i]]+beta[J[i]]*i 
+    mu[i] <- alpha[J[i]]+beta[J[i]]*i
     J[i]<- d[i]+1 # move to (0,1) in (1,2)
     LogLik[i] <- log(dnorm( x[i],mu[i],sinv[i]))  # this is for computing the WAIC, see later
     xpred[i] ~ dnorm(mu[i], sinv[i])
   }
-  
-  
+
+
   # Prior for d[i]
   Tau ~  dunif(1,n+10)
   # Prior for beta
@@ -301,66 +307,176 @@ modelChangePoint_lin <-
   beta[2] ~ dnorm(0,0.0000000000001)
   sinv_p[1] ~  dunif(0,10)
   sinv_p[2] ~  dunif(0,10)
-  
+
 }"
 ```
 
 ```{r}
-myData=list(x=JFK$series__raw,n=length(JFK$series__raw)) # 
+myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 
-sampCP_mcmc_lin <- jags(model.file=textConnection(modelChangePoint_lin),data=myData,
-                     parameters.to.save=c("mu","xpred","alpha","beta","Tau","J","LogLik", "sinv"), 
-                     n.adapt=1000, n.iter=10000,n.chains = 2,n.burnin = 2000)
+sampCP_mcmc_lin <- jags(
+  model.file = textConnection(modelChangePoint_lin), data = myData,
+  parameters.to.save = c("mu", "xpred", "alpha", "beta", "Tau", "J", "LogLik", "sinv"),
+  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+)
 
 
-
-
-ssCP=summary(sampCP_mcmc_lin)
+ssCP <- summary(sampCP_mcmc_lin)
 ```
 
 ```{r}
-q1=ssCP["Tau",c("2.5%")]
-q2=ssCP["Tau",c("97.5%")]
-tmean=ssCP["Tau",c("mean")]
-mtrueT=c(rep(2354015,330),rep(4070000,168))
+q1 <- ssCP["Tau", c("2.5%")]
+q2 <- ssCP["Tau", c("97.5%")]
+tmean <- ssCP["Tau", c("mean")]
+mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
 
-plot(mtrueT[1:468],col="black",type="l",lwd=2.0,ylim=c(min(JFK$series__raw)-0.5,max(JFK$series__raw)+0.5),xlab="time",ylab="Y")
-lines(c(1:468),JFK$series__raw,type="p",col="orange")
-lines(c(1:468),JFK$series__raw,type="l",col="orange")
-lines(c(1:468),ssCP[1:468,"2.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP[1:468,"97.5%"],type="l",lty=2,col="blue")
-lines(c(1:468),ssCP[469:936,"2.5%"],type="l",lty=2,col="green")
-lines(c(1:468),ssCP[469:936,"97.5%"],type="l",lty=2,col="green")
-points(ssCP[1:468,"mean"],col="magenta",lwd=1.0) 
-abline(v=tmean,col="red",lwd=1.5)
-abline(v=q1,col="red",lwd=1.5,lty = 3)
-abline(v=q2,col="red",lwd=1.5,lty = 3)
-labels=c(paste0('Data'),
-           paste0('Model'),
-           paste0('Credible interval'),
-           paste0('Predictive Interval'),
-           paste0('Changepoint'))
-legend("topleft", legend=labels, col=c("orange", "magenta","blue", "green", "red"), lty = 1, cex=0.75)
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
+lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
+lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssCP[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssCP[1:468, "mean"], col = "magenta", lwd = 1.0)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+  paste0("Data"),
+  paste0("Model"),
+  paste0("Credible interval"),
+  paste0("Predictive Interval"),
+  paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
 
-#plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
-#points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
 
-#abline(v=tmean,col="red",lwd=1.5)
-#abline(v=q1,col="red",lwd=1.5,lty = 3)
-#abline(v=q2,col="red",lwd=1.5,lty = 3)
-plot(sampCP_mcmc_lin,"Tau")
-plot(sampCP_mcmc_lin,'mu[1]')
-plot(sampCP_mcmc_lin,'mu[328]')
-plot(sampCP_mcmc_lin,'xpred[1]')
-plot(sampCP_mcmc_lin,'alpha[1]')
-plot(sampCP_mcmc_lin,'alpha[2]')
-plot(sampCP_mcmc_lin,'beta[1]')
-plot(sampCP_mcmc_lin,'beta[2]')
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_lin, "Tau")
+plot(sampCP_mcmc_lin, "mu[1]")
+plot(sampCP_mcmc_lin, "mu[328]")
+plot(sampCP_mcmc_lin, "xpred[1]")
+plot(sampCP_mcmc_lin, "alpha[1]")
+plot(sampCP_mcmc_lin, "alpha[2]")
+plot(sampCP_mcmc_lin, "beta[1]")
+plot(sampCP_mcmc_lin, "beta[2]")
 ```
 
 ```{r}
 sampCP_mcmc_lin$DIC
-loglik <- sampCP_mcmc_lin$sims.list$LogLik  # model with change point
+loglik <- sampCP_mcmc_lin$sims.list$LogLik # model with change point
+
+waic <- waic(loglik)
+
+waic
+```
+
+## Periodic model
+
+$$ y_t = \mu_t + \epsilon_t $$ where $$ \mu_t = \alpha_t + \beta_t X $$
+and
+$$  \text{where } \epsilon_t \sim {N}(\gamma \cos(\frac{2\pi m}{12}) + \delta \sin(\frac{2\pi m}{12}),\sigma_t^2) $$
+
+```{r}
+modelChangePoint_period <-
+  "model{
+  #
+  for(t in 1:n){
+    d[t]<-step(Tau-t)
+  }
+  # Likelihood
+  for(i in 1:n){
+    x[i]   ~ dnorm(mu[i],sinv[i])
+    sinv[i] <- sinv_p[J[i]]
+    mu[i] <- alpha[J[i]]+beta[J[i]]*i + gamma*cos(w*i) + delta*sin(w*i)
+    J[i]<- d[i]+1 # move to (0,1) in (1,2)
+    LogLik[i] <- log(dnorm( x[i],mu[i],sinv[i]))  # this is for computing the WAIC, see later
+    xpred[i] ~ dnorm(mu[i], sinv[i])
+  }
+
+  pi <- 3.14159265358979
+
+  w <- 2 * pi / 12
+  
+  # Prior for eps[i]
+  gamma ~  dnorm(0,0.000000000001)
+  delta ~  dnorm(0,0.000000000001)
+
+  # Prior for d[i]
+  Tau ~  dunif(1,n+10)
+  
+  # Prior for beta
+  alpha[1] ~ dnorm(0,0.000000000001)
+  alpha[2] ~ dnorm(0,0.000000000001)
+  beta[1] ~ dnorm(0,0.0000000000001)
+  beta[2] ~ dnorm(0,0.0000000000001)
+  sinv_p[1] ~  dunif(0,10)
+  sinv_p[2] ~  dunif(0,10)
+}"
+```
+
+```{r}
+myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
+
+sampCP_mcmc_period <- jags(
+  model.file = textConnection(modelChangePoint_period), data = myData,
+  parameters.to.save = c("mu", "xpred", "alpha", "beta", "gamma", "delta", "Tau", "J", "LogLik", "sinv"),
+  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+)
+
+
+ssCP <- summary(sampCP_mcmc_period)
+```
+
+```{r}
+q1 <- ssCP["Tau", c("2.5%")]
+q2 <- ssCP["Tau", c("97.5%")]
+tmean <- ssCP["Tau", c("mean")]
+mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
+
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
+lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
+lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssCP[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssCP[1:468, "mean"], col = "magenta", lwd = 1.0)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+  paste0("Data"),
+  paste0("Model"),
+  paste0("Credible interval"),
+  paste0("Predictive Interval"),
+  paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
+
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_period, "Tau")
+plot(sampCP_mcmc_period, "mu[1]")
+plot(sampCP_mcmc_period, "mu[328]")
+plot(sampCP_mcmc_period, "xpred[1]")
+plot(sampCP_mcmc_period, "alpha[1]")
+plot(sampCP_mcmc_period, "alpha[2]")
+plot(sampCP_mcmc_period, "beta[1]")
+plot(sampCP_mcmc_period, "beta[2]")
+```
+
+```{r}
+sampCP_mcmc_period$DIC
+loglik <- sampCP_mcmc_period$sims.list$LogLik # model with change point
 
 waic <- waic(loglik)
 

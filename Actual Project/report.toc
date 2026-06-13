@@ -1,13 +1,16 @@
 \babel@toc {english}{}\relax 
 \contentsline {section}{\numberline {I}Introduction and presentation of the dataset}{2}{section.1}%
-\contentsline {section}{\numberline {II}Definitions of the different models}{2}{section.2}%
-\contentsline {subsection}{\numberline {1}Switching Model}{2}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2}Time Series Models}{2}{subsection.2.2}%
-\contentsline {section}{\numberline {III}Model Selection}{2}{section.3}%
-\contentsline {section}{\numberline {IV}Analysis of the selected models}{2}{section.4}%
-\contentsline {subsection}{\numberline {1}Switching Model}{2}{subsection.4.1}%
-\contentsline {subsection}{\numberline {2}Time Series Model}{2}{subsection.4.2}%
-\contentsline {section}{\numberline {V}Test of predictions}{2}{section.5}%
-\contentsline {section}{\numberline {VI}Conclusion}{2}{section.6}%
-\contentsline {section}{\numberline {VII}Appendix}{3}{section.7}%
+\contentsline {subsection}{\numberline {1}Introduction}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {2}Preliminary analysis of the dataset}{2}{subsection.1.2}%
+\contentsline {section}{\numberline {II}Definitions of the different models}{3}{section.2}%
+\contentsline {subsection}{\numberline {1}Simple Model}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2}Switching Variance Model}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {3}Linear Drift Model}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {4}Periodic Model}{4}{subsection.2.4}%
+\contentsline {subsection}{\numberline {5}Time Series Model}{5}{subsection.2.5}%
+\contentsline {section}{\numberline {III}Model Selection}{5}{section.3}%
+\contentsline {section}{\numberline {IV}Analysis of the selected models}{5}{section.4}%
+\contentsline {section}{\numberline {V}Test of predictions}{5}{section.5}%
+\contentsline {section}{\numberline {VI}Conclusion}{5}{section.6}%
+\contentsline {section}{\numberline {VII}Appendix}{6}{section.7}%
 \contentsfinish 
