@@ -438,7 +438,7 @@ q2 <- ssCP["Tau", c("97.5%")]
 tmean <- ssCP["Tau", c("mean")]
 mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
 
-plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0,xlim=c(0, 10), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
 lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
 lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
 lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
@@ -466,7 +466,7 @@ legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green",
 # abline(v=q2,col="red",lwd=1.5,lty = 3)
 plot(sampCP_mcmc_period, "Tau")
 plot(sampCP_mcmc_period, "mu[1]")
-plot(sampCP_mcmc_period, "mu[328]")
+plot(sampCP_mcmc_period, "mu[293]")
 plot(sampCP_mcmc_period, "xpred[1]")
 plot(sampCP_mcmc_period, "alpha[1]")
 plot(sampCP_mcmc_period, "alpha[2]")
@@ -481,4 +481,91 @@ loglik <- sampCP_mcmc_period$sims.list$LogLik # model with change point
 waic <- waic(loglik)
 
 waic
+```
+
+```{r}
+modelAR <-"model {
+  ## parameters: alpha,tau,m0
+  #likeliohood 
+  mu[1]<-Y[1]
+  Yp[1]=mu[1]
+  for (i in 2:N) {
+    Y[i] ~ dnorm(mu[i],tau)
+    mu[i]<-m0+alpha*Y[i-1]
+    Yp[i] ~ dnorm(mu[i],tau) # prediction in sample
+  }
+  # prediction out of sample 
+  ypOut[1] ~dnorm(m0+alpha*Y[N],tau) 
+  for(k in 2:Npred){
+  ypOut[k] ~dnorm(m0+alpha*ypOut[k-1],tau) 
+  }
+  sigma2<-1/tau
+  #prior 
+  alpha ~ dunif(-1.5,1.5)
+  tau ~ dgamma(0.1, 10)
+  m0 ~dnorm(0.0, 1.0E-10)
+}"
+```
+
+```{r}
+myData <- list(Y = JFK$series__raw, 
+               N = length(JFK$series__raw),
+               Npred = 12)  # quanti passi vuoi prevedere nel futuro
+
+sampAR_mcmc <- jags(
+  model.file = textConnection(modelAR), 
+  data = myData,
+  parameters.to.save = c("mu", "Yp", "ypOut", "alpha", "m0", "tau", "sigma2"),
+  n.adapt = 1000, 
+  n.iter = 5000, 
+  n.chains = 2, 
+  n.burnin = 2000
+)
+
+ssAR <- summary(sampAR_mcmc)
+```
+
+```{r}
+#q1 <- ssAR["m0", c("2.5%")]
+#q2 <- ssAR["m0", c("97.5%")]
+#mu_mean <- ssAR["", muc("mean")]
+
+plot(JFK$series__raw, col = "orange", type = "p", lwd = 2.0, xlim = c(200, 250), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), ssAR[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssAR[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssAR[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssAR[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssAR[1:468, "mean"], col = "magenta", lwd = 1.0)
+#abline(v = tmean, col = "red", lwd = 1.5)
+#abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+#abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+  paste0("Data"),
+  paste0("Model"),
+  paste0("Credible interval"),
+  paste0("Predictive Interval"),
+  paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
+
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampAR_mcmc, "m0")
+plot(sampAR_mcmc, "alpha")
+#plot(sampCP_mcmc_period, "mu[293]")
+#plot(sampCP_mcmc_period, "xpred[1]")
+#plot(sampCP_mcmc_period, "alpha[1]")
+#plot(sampCP_mcmc_period, "alpha[2]")
+#plot(sampCP_mcmc_period, "beta[1]")
+#plot(sampCP_mcmc_period, "beta[2]")
+```
+
+```{}
+```
+
+```         
 ```
