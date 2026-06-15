@@ -1,3 +1,7 @@
+```{r}
+
+```
+
 ---
 title: "Final Project"
 output:
@@ -564,7 +568,140 @@ plot(sampAR_mcmc, "alpha")
 #plot(sampCP_mcmc_period, "beta[2]")
 ```
 
-```{}
+```{r}
+modelAR_period <- "model{
+
+##################################
+# CHANGE POINT
+##################################
+
+for(t in 1:n){
+d[t] <- step(Tau - t)
+}
+
+##################################
+# FIRST OBSERVATION
+##################################
+
+J[1] <- d[1] + 1
+
+mu[1] <-
+alpha[J[1]]
++ beta[J[1]] * 1
++ gamma * cos(w * 1)
++ delta * sin(w * 1)
+
+sinv[1] <- sinv_p[J[1]]
+
+x[1] ~ dnorm(mu[1], sinv[1])
+
+LogLik[1] <- log(dnorm(x[1],mu[1],sinv[1]))
+
+xpred[1] ~ dnorm(mu[1],sinv[1])
+
+##################################
+# AR(1)
+##################################
+for(i in 2:n){
+
+J[i] <- d[i] + 1
+
+sinv[i] <- sinv_p[J[i]]
+
+mu[i] <-
+alpha[J[i]]
++ beta[J[i]] * i
++ gamma * cos(w * i)
++ delta * sin(w * i)
+
+meanAR[i] <-
+mu[i]
++ a * (x[i-1] - mu[i-1])
+
+x[i] ~ dnorm(meanAR[i], sinv[i])
+
+LogLik[i] <- log(dnorm(x[i],meanAR[i],sinv[i]))
+
+xpred[i] ~ dnorm(meanAR[i],sinv[i])
+}
+##################################
+# CONSTANTS
+##################################
+pi <- 3.14159265358979
+w <- 2*pi/12
+##################################
+# PRIORS
+##################################
+gamma ~ dnorm(0,1.0E-12)
+delta ~ dnorm(0,1.0E-12)
+alpha[1] ~ dnorm(0,1.0E-12)
+alpha[2] ~ dnorm(0,1.0E-12)
+beta[1] ~ dnorm(0,1.0E-13)
+beta[2] ~ dnorm(0,1.0E-13)
+Tau ~ dunif(1,n+10)
+a ~ dunif(-1,1)
+sinv_p[1] ~ dunif(0,10)
+sinv_p[2] ~ dunif(0,10)
+}"
+```
+
+```{r}
+myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
+sampCP_mcmc_AR_period <- jags(
+model.file = textConnection(modelAR_period), data = myData,
+parameters.to.save = c("mu", "xpred", "alpha", "beta", "gamma", "delta", "Tau", "a", "J", "LogLik", "sinv"),
+n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+)
+ssCP <- summary(sampCP_mcmc_AR_period)
+```
+
+```{r}
+q1 <- ssCP["Tau", c("2.5%")]
+q2 <- ssCP["Tau", c("97.5%")]
+tmean <- ssCP["Tau", c("mean")]
+mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, xlim = c(200, 250), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
+lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
+#lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
+#lines(c(1:468), ssCP[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(c(1:468), ssCP[469:936, "2.5%"], type = "l", lty = 2, col = "green")
+lines(c(1:468), ssCP[469:936, "97.5%"], type = "l", lty = 2, col = "green")
+points(ssCP[1:468, "mean"], col = "magenta", lwd = 1.0)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c(
+paste0("Data"),
+paste0("Model"),
+paste0("Credible interval"),
+paste0("Predictive Interval"),
+paste0("Changepoint")
+)
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
+# plot(Ttrue-1,col="black",type="l",lwd=2.0,xlab="time",ylab="probability")
+# points(1-(ssCP2[(TT+2):(2*TT+2)]-1),col="magenta") #
+# abline(v=tmean,col="red",lwd=1.5)
+# abline(v=q1,col="red",lwd=1.5,lty = 3)
+# abline(v=q2,col="red",lwd=1.5,lty = 3)
+plot(sampCP_mcmc_AR_period, "Tau")
+plot(sampCP_mcmc_AR_period, "mu[1]")
+plot(sampCP_mcmc_AR_period, "mu[293]")
+plot(sampCP_mcmc_AR_period, "xpred[1]")
+plot(sampCP_mcmc_AR_period, "alpha[1]")
+plot(sampCP_mcmc_AR_period, "alpha[2]")
+plot(sampCP_mcmc_AR_period, "beta[1]")
+plot(sampCP_mcmc_AR_period, "beta[2]")
+```
+
+```{r}
+sampCP_mcmc_AR_period$DIC
+loglik <- sampCP_mcmc_AR_period$sims.list$LogLik # model with change point
+waic <- waic(loglik)
+waic
+```
+
+```         
 ```
 
 ```         
