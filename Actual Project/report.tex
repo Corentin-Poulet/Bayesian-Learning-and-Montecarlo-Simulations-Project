@@ -68,7 +68,18 @@ For the global data, the plot is the figure below:
     \label{fig:enter-label}
 \end{figure}
 
+We can also plot the mean across the years to see the the data without the periodicity: 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{average.png}
+    \caption{Average number of passengers across the years}
+    \label{fig:enter-label}
+\end{figure}
+
 Here we can identify a change in the global trend at the beginning of the 2000's. In early 2000's, we can identify a transition between two regimes. The purpose of this study is to fit a model on this transition and to analyse it. \\
+
+
 
 During the project, we tried different kind of models based on the Changepoint Model, a model to take into account a change in the global trend of the data. We tried some models from the simplest changepoint model to more complex models and Time Series models.\\
 
@@ -194,7 +205,23 @@ In this section we explore additional time series model, we try first an ARX(1) 
  \text{Here } \tau \text{ is an unknown change-point parameter.}
 \end{displaymath}\\
 
-If time, try a SARMA process instead of a ARX.
+
+\section{Model Selection}
+
+Comparing the metrics for all models (DIC, WAIC)
+\section{Analysis of the selected models}
+
+Here we can give an overview of the selected model (quick summary of what is the model and how it behaves in details)
+\section{Test of predictions}
+
+test on unseen data
+
+\section{Conclusion}
+
+To conclude, we achieved to find a suitable model to understand th dynamics of the flights in the JFK airport with a changepoint model with two linear trends and
+periodic functions to model the periodicity of the data. The changepoint is identified near the INSERT THE CHANGEPOINT SELECTED. 
+
+Finally, we can identify some other idea to improve more the model. First a SARMAX model (which replaces the periodic part and add a AR part depending on the variable)
 
 \begin{displaymath}
  y_t = \mu_t + \epsilon_t, \\ 
@@ -216,19 +243,10 @@ If time, try a SARMA process instead of a ARX.
  \text{Here } \tau \text{ is an unknown change-point parameter.}
 \end{displaymath}\\
 
-\section{Model Selection}
 
-Comparing the metrics for all models (DIC, WAIC)
-\section{Analysis of the selected models}
+We could  have also consider to change the parameters related to the periodic part and the time series part between the two regimes. 
 
-Here we can give an overview of the selected model (quick summary of what is the model and how it behaves in details)
-\section{Test of predictions}
 
-test on unseen data
-
-\section{Conclusion}
-
-conclusion
 \newpage
 \section{Appendix}
 \end{document}
