@@ -130,7 +130,7 @@ myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 sampCP_mcmc <- jags(
   model.file = textConnection(modelChangePoint), data = myData,
   parameters.to.save = c("mu", "xpred", "Tau", "J", "LogLik", "sinv"),
-  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+  n.adapt = 1000, n.iter = 10000, n.chains = 4, n.burnin = 2000
 )
 
 
@@ -225,7 +225,7 @@ myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 sampCP_mcmc_2v <- jags(
   model.file = textConnection(modelChangePoint_2v), data = myData,
   parameters.to.save = c("mu", "xpred", "Tau", "J", "LogLik", "sinv"),
-  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+  n.adapt = 1000, n.iter = 10000, n.chains = 4, n.burnin = 2000
 )
 
 
@@ -321,7 +321,7 @@ myData <- list(x = JFK$series__raw, n = length(JFK$series__raw)) #
 sampCP_mcmc_lin <- jags(
   model.file = textConnection(modelChangePoint_lin), data = myData,
   parameters.to.save = c("mu", "xpred", "alpha", "beta", "Tau", "J", "LogLik", "sinv"),
-  n.adapt = 1000, n.iter = 10000, n.chains = 2, n.burnin = 2000
+  n.adapt = 1000, n.iter = 10000, n.chains = 4, n.burnin = 2000
 )
 
 
@@ -411,7 +411,7 @@ modelChangePoint_period <-
   delta ~  dnorm(0,0.000000000001)
 
   # Prior for d[i]
-  Tau ~  dunif(1,n+10)
+  Tau ~  dnorm(310,0.1)
   
   # Prior for beta
   alpha[1] ~ dnorm(0,0.000000000001)
@@ -442,7 +442,7 @@ q2 <- ssCP["Tau", c("97.5%")]
 tmean <- ssCP["Tau", c("mean")]
 mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
 
-plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0,xlim=c(0, 10), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
 lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
 lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
 lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
@@ -624,9 +624,7 @@ LogLik[i] <- log(dnorm(x[i],meanAR[i],sinv[i]))
 
 xpred[i] ~ dnorm(meanAR[i],sinv[i])
 }
-##################################
-# CONSTANTS
-##################################
+
 pi <- 3.14159265358979
 w <- 2*pi/12
 ##################################
@@ -638,7 +636,7 @@ alpha[1] ~ dnorm(0,1.0E-12)
 alpha[2] ~ dnorm(0,1.0E-12)
 beta[1] ~ dnorm(0,1.0E-13)
 beta[2] ~ dnorm(0,1.0E-13)
-Tau ~ dunif(1,n+10)
+Tau ~ dnorm(300,0.001)
 a ~ dunif(-1,1)
 sinv_p[1] ~ dunif(0,10)
 sinv_p[2] ~ dunif(0,10)
@@ -660,7 +658,7 @@ q1 <- ssCP["Tau", c("2.5%")]
 q2 <- ssCP["Tau", c("97.5%")]
 tmean <- ssCP["Tau", c("mean")]
 mtrueT <- c(rep(2354015, 330), rep(4070000, 168))
-plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, xlim = c(200, 250), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+plot(mtrueT[1:468], col = "black", type = "l", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
 lines(c(1:468), JFK$series__raw, type = "p", col = "orange")
 lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
 #lines(c(1:468), ssCP[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
@@ -692,6 +690,7 @@ plot(sampCP_mcmc_AR_period, "alpha[1]")
 plot(sampCP_mcmc_AR_period, "alpha[2]")
 plot(sampCP_mcmc_AR_period, "beta[1]")
 plot(sampCP_mcmc_AR_period, "beta[2]")
+plot(sampCP_mcmc_AR_period, "a")
 ```
 
 ```{r}
