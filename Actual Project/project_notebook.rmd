@@ -1019,3 +1019,33 @@ loglik_ARX <- sampCP_mcmc_ARX_period$sims.list$LogLik # model with change point
 waic_ARX <- waic(loglik_ARX)
 waic_ARX
 ```
+
+### Model Selection
+
+```{r}
+library(loo)
+
+loo_sampCP <- loo(loglik_sampCP)
+
+loo_sampCP_2v <- loo(loglik_sampCP_2v)
+
+loo_lin <- loo(loglik_lin)
+
+loo_per <- loo(loglik_per)
+
+loo_ar_period <- loo(loglik_ar_period)
+
+loo_ARX <- loo(loglik_ARX)
+```
+
+```{r}
+# Compare the models
+model_comparison <- loo_compare(list(SampCP = loo_sampCP,
+                                     SampCP2v = loo_sampCP_2v,
+                                     Lin = loo_lin,
+                                     Periodic = loo_per,
+                                     AR = loo_ar_period,
+                                     ARX = loo_ARX))
+
+print(model_comparison)
+```
