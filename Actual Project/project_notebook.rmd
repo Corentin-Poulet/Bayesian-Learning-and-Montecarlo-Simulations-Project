@@ -873,9 +873,8 @@ LogLik[1] <- log(dnorm(x[1],meanARX[1],sinv[1]))
 
 xpred[1] ~ dnorm(meanARX[1],sinv[1])
 
-##################################
 # AR(1)
-##################################
+
 for(i in 2:n){
 
 J[i] <- d[i] + 1
@@ -902,9 +901,9 @@ xpred[i] ~ dnorm(meanARX[i],sinv[i])
 
 pi <- 3.14159265358979
 w <- 2*pi/12
-##################################
+
 # PRIORS
-##################################
+
 gamma ~ dnorm(0,1.0E-12)
 delta ~ dnorm(0,1.0E-12)
 alpha[1] ~ dnorm(0,1.0E-12)
@@ -1048,4 +1047,191 @@ model_comparison <- loo_compare(list(SampCP = loo_sampCP,
                                      ARX = loo_ARX))
 
 print(model_comparison)
+```
+
+```{r}
+modelAR_period_PRED <- "model{
+#change point
+for(t in 1:n_train){
+  d[t] <- step(Tau - t)
+}
+#first observation
+J[1] <- d[1] + 1
+mu[1] <- alpha[J[1]] + beta[J[1]] * 1 + gamma * cos(w * 1) + delta * sin(w * 1)
+sinv[1] <- sinv_p[J[1]]
+x[1] ~ dnorm(mu[1], sinv[1])
+LogLik[1] <- log(dnorm(x[1], mu[1], sinv[1]))
+xpred[1] ~ dnorm(mu[1], sinv[1])
+
+#likelihood
+for(i in 2:n_train){
+  J[i] <- d[i] + 1
+  sinv[i] <- sinv_p[J[i]]
+  mu[i] <- alpha[J[i]] + beta[J[i]] * i + gamma * cos(w * i) + delta * sin(w * i)
+  meanAR[i] <- mu[i] + a * (x[i-1] - mu[i-1])
+  x[i] ~ dnorm(meanAR[i], sinv[i])
+  LogLik[i] <- log(dnorm(x[i], meanAR[i], sinv[i]))
+  xpred[i] ~ dnorm(meanAR[i], sinv[i])
+}
+
+#out-of-sample prediction ( we assume t > Tau)
+mupred[1] <- alpha[1] + beta[1] * (n_train + 1) + gamma * cos(w * (n_train + 1)) + delta * sin(w * (n_train + 1))
+ypOut_mean[1] <- mupred[1] + a * (x[n_train] - mu[n_train])
+ypOut[1] ~ dnorm(ypOut_mean[1], sinv_p[1])
+
+for(k in 2:Npred){
+  mupred[k] <- alpha[1] + beta[1] * (n_train + k) + gamma * cos(w * (n_train + k)) + delta * sin(w * (n_train + k))
+  ypOut_mean[k] <- mupred[k] + a * (ypOut[k-1] - mupred[k-1])
+  ypOut[k] ~ dnorm(ypOut_mean[k], sinv_p[1])
+}
+
+pi <- 3.14159265358979
+w <- 2*pi/12
+
+#priors
+gamma ~ dnorm(0,1.0E-12)
+delta ~ dnorm(0,1.0E-12)
+alpha[1] ~ dnorm(0,1.0E-12)
+alpha[2] ~ dnorm(0,1.0E-12)
+beta[1] ~ dnorm(0,1.0E-13)
+beta[2] ~ dnorm(0,1.0E-13)
+Tau ~ dnorm(300, 0.1)
+a ~ dunif(-1,1)
+sinv_p[1] ~ dunif(0,10)
+sinv_p[2] ~ dunif(0,10)
+
+#to avoid numerical problem when calculating ESS
+sigma[1] <- 1/sqrt(sinv_p[1])
+sigma[2] <- 1/sqrt(sinv_p[2])
+}"
+  
+```
+
+```{r}
+n_train <- 432  #we split defore the last year
+Npred <- 36
+
+inits <- list(
+  list(.RNG.name = "base::Wichmann-Hill",  .RNG.seed = 4),
+  list(.RNG.name = "base::Wichmann-Hill",  .RNG.seed = 8),
+  list(.RNG.name = "base::Wichmann-Hill",  .RNG.seed = 15),
+  list(.RNG.name = "base::Wichmann-Hill",  .RNG.seed = 16)
+)
+
+
+myData_train <- list(x = JFK$series__raw[1:n_train], n_train = n_train, Npred = Npred)
+
+sampCP_train <- jags(
+  model.file = textConnection(modelAR_period_PRED), data = myData_train,
+  parameters.to.save = c("mu", "xpred", "alpha", "beta", "gamma", "delta", "Tau", "a", "sigma", "ypOut"),
+  n.adapt = 1000, n.iter = 10000, inits = inits, n.chains = 4, n.burnin = 2000
+)
+```
+
+```{r}
+# --- MCMC Diagnostics ---
+# R-hat and ESS for key parameters (already computed by jagsUI)
+sampCP_train$Rhat$Tau
+sampCP_train$Rhat$alpha
+sampCP_train$Rhat$beta
+sampCP_train$Rhat$gamma
+sampCP_train$Rhat$delta
+sampCP_train$Rhat$a
+sampCP_train$Rhat$sigma
+sampCP_train$Rhat$ypOut
+sampCP_train$n.eff$Tau
+sampCP_train$n.eff$alpha
+sampCP_train$n.eff$beta
+sampCP_train$n.eff$gamma
+sampCP_train$n.eff$delta
+sampCP_train$n.eff$a
+sampCP_train$n.eff$sigma
+sampCP_train$n.eff$ypOut
+
+# Trace plot + posterior density (R-hat shown automatically)
+plot(sampCP_train, "Tau")
+plot(sampCP_train, "alpha")
+plot(sampCP_train, "beta")
+plot(sampCP_train, "gamma")
+plot(sampCP_train, "delta")
+plot(sampCP_train, "a")
+plot(sampCP_train, "sigma")
+
+# Posterior mean estimate of seasonal amplitude (single gamma/delta, not split by regime)
+ssCP_train <- summary(sampCP_train)
+gamma_m <- ssCP_train["gamma", "mean"]
+delta_m <- ssCP_train["delta", "mean"]
+A <- sqrt(gamma_m^2 + delta_m^2)
+print(paste("Seasonal amplitude:", round(A, 2)))
+
+# Posterior mean of AR(1) coefficient
+print(paste("AR(1) coefficient (a):", round(ssCP_train["a", "mean"], 3)))
+
+# Autocorrelation for key parameters
+autocorr.plot(as.mcmc(sampCP_train$samples[[1]][, c("alpha[1]", "alpha[2]", "beta[1]", "beta[2]", "sigma[1]", "sigma[2]")]), lag.max = 40)
+autocorr.plot(as.mcmc(sampCP_train$samples[[1]][, c("Tau", "gamma", "delta", "a")]), lag.max = 40)
+```
+
+```{r}
+# In-sample plot (fit on training data)
+q1 <- ssCP_train["Tau", c("2.5%")]
+q2 <- ssCP_train["Tau", c("97.5%")]
+tmean <- ssCP_train["Tau", c("mean")]
+
+mu_rows    <- grep("^mu\\[", rownames(ssCP_train))
+xpred_rows <- grep("^xpred\\[", rownames(ssCP_train))
+
+plot(1:n_train, JFK$series__raw[1:n_train], col = "orange", type = "p", lwd = 2.0,
+     #xlim = c(0, 50),
+     ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5),
+     xlab = "time", ylab = "Y")
+lines(1:n_train, JFK$series__raw[1:n_train], type = "l", col = "orange")
+lines(1:n_train, ssCP_train[mu_rows, "2.5%"], type = "l", lty = 2, col = "blue")
+lines(1:n_train, ssCP_train[mu_rows, "97.5%"], type = "l", lty = 2, col = "blue")
+lines(1:n_train, ssCP_train[xpred_rows, "2.5%"], type = "l", lty = 2, col = "green")
+lines(1:n_train, ssCP_train[xpred_rows, "97.5%"], type = "l", lty = 2, col = "green")
+points(1:n_train, ssCP_train[mu_rows, "mean"], col = "magenta", lwd = 0.75)
+abline(v = tmean, col = "red", lwd = 1.5)
+abline(v = q1, col = "red", lwd = 1.5, lty = 3)
+abline(v = q2, col = "red", lwd = 1.5, lty = 3)
+labels <- c("Data", "Model", "Credible interval", "Predictive Interval", "Changepoint")
+legend("topleft", legend = labels, col = c("orange", "magenta", "blue", "green", "red"), lty = 1, cex = 0.75)
+
+# Out-of-sample prediction plot
+ypOut_rows <- grep("^ypOut\\[", rownames(ssCP_train))
+
+yp_pred <- ssCP_train[ypOut_rows, "mean"]
+q1_pred <- ssCP_train[ypOut_rows, "2.5%"]
+q2_pred <- ssCP_train[ypOut_rows, "97.5%"]
+
+n_total <- n_train + Npred
+future_t <- (n_train + 1):n_total
+y_true <- JFK$series__raw[future_t]
+
+plot(1:n_total, JFK$series__raw[1:n_total], col = "red", type = "l",
+     ylim = c(min(q1_pred, JFK$series__raw[1:n_total]) - 0.5,
+              max(q2_pred, JFK$series__raw[1:n_total]) + 0.5),
+     xlim = c(n_total-48, n_total),
+     xlab = "time", ylab = "Y",
+     main = "Out-of-sample prediction")
+points(future_t, JFK$series__raw[future_t], col = "orange", pch = 19)  # true test values
+abline(v = n_train, col = "orange", lwd = 1.5)
+points(future_t, yp_pred, pch = "*", col = "magenta", cex = 1.5)
+lines(future_t, q1_pred, col = "magenta", lwd = 1.5, lty = 2)
+lines(future_t, q2_pred, col = "magenta", lwd = 1.5, lty = 2)
+
+labels2 <- c("Observed data", "True test values", "Predicted mean", "95% Predictive interval")
+legend("topleft", legend = labels2, col = c("red", "orange", "magenta", "magenta"),
+       lty = c(1, NA, NA, 2), pch = c(NA, 19, 8, NA), cex = 0.75)
+
+length(y_true)
+length(q1_pred)
+length(q2_pred)
+
+inside <- (y_true >= q1_pred) & (y_true <= q2_pred)
+
+
+coverage <- mean(inside)
+
+coverage
 ```
