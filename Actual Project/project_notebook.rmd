@@ -1024,29 +1024,57 @@ waic_ARX
 ```{r}
 library(loo)
 
+# Compute LOO-CV for each model
 loo_sampCP <- loo(loglik_sampCP)
-
 loo_sampCP_2v <- loo(loglik_sampCP_2v)
-
 loo_lin <- loo(loglik_lin)
-
 loo_per <- loo(loglik_per)
-
 loo_ar_period <- loo(loglik_ar_period)
-
 loo_ARX <- loo(loglik_ARX)
+
+# Compute WAIC for each model
+waic_sampCP    <- waic(loglik_sampCP)
+waic_sampCP_2v <- waic(loglik_sampCP_2v)
+waic_lin       <- waic(loglik_lin)
+waic_per       <- waic(loglik_per)
+waic_ar_period <- waic(loglik_ar_period)
+waic_ARX       <- waic(loglik_ARX)
 ```
 
 ```{r}
 # Compare the models
-model_comparison <- loo_compare(list(SampCP = loo_sampCP,
-                                     SampCP2v = loo_sampCP_2v,
-                                     Lin = loo_lin,
-                                     Periodic = loo_per,
-                                     AR = loo_ar_period,
-                                     ARX = loo_ARX))
+loo_comparison <- loo_compare(list(
+  SampCP = loo_sampCP,
+  SampCP2v = loo_sampCP_2v,
+  Lin = loo_lin,
+  Periodic = loo_per,
+  AR = loo_ar_period,
+  ARX = loo_ARX
+))
 
-print(model_comparison)
+waic_comparison <- loo_compare(list(
+  SampCP   = waic_sampCP,
+  SampCP2v = waic_sampCP_2v,
+  Lin      = waic_lin,
+  Periodic = waic_per,
+  AR       = waic_ar_period,
+  ARX      = waic_ARX
+))
+
+model_names <- c("SampCP", "SampCP2v", "Lin", "Periodic", "AR", "ARX")
+
+loo_list  <- list(loo_sampCP, loo_sampCP_2v, loo_lin, loo_per, loo_ar_period, loo_ARX)
+waic_list <- list(waic_sampCP, waic_sampCP_2v, waic_lin, waic_per, waic_ar_period, waic_ARX)
+
+ic_table <- data.frame(
+  Model   = model_names,
+  LOOIC   = sapply(loo_list,  \(x) round(x$estimates["looic", "Estimate"], 2)),
+  SE_LOO  = sapply(loo_list,  \(x) round(x$estimates["looic", "SE"], 2)),
+  WAIC    = sapply(waic_list, \(x) round(x$estimates["waic",  "Estimate"], 2)),
+  SE_WAIC = sapply(waic_list, \(x) round(x$estimates["waic",  "SE"], 2))
+)
+
+print(ic_table[order(ic_table$LOOIC), ])
 ```
 
 ```{r}
