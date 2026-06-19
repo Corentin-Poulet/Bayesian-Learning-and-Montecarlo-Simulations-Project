@@ -673,17 +673,16 @@ plot(sampAR_mcmc, "alpha")
 ```{r}
 modelAR_period <- "model{
 
-##################################
-# CHANGE POINT
-##################################
+
+# change point
+
 
 for(t in 1:n){
 d[t] <- step(Tau - t)
 }
 
-##################################
-# FIRST OBSERVATION
-##################################
+# first observation
+
 
 J[1] <- d[1] + 1
 
@@ -701,9 +700,9 @@ LogLik[1] <- log(dnorm(x[1],mu[1],sinv[1]))
 
 xpred[1] ~ dnorm(mu[1],sinv[1])
 
-##################################
-# AR(1)
-##################################
+
+# likelihood
+
 for(i in 2:n){
 
 J[i] <- d[i] + 1
@@ -729,9 +728,9 @@ xpred[i] ~ dnorm(meanAR[i],sinv[i])
 
 pi <- 3.14159265358979
 w <- 2*pi/12
-##################################
-# PRIORS
-##################################
+
+# priors
+
 gamma ~ dnorm(0,1.0E-12)
 delta ~ dnorm(0,1.0E-12)
 alpha[1] ~ dnorm(0,1.0E-12)
@@ -817,7 +816,7 @@ q1 <- ssCP_AR_period["Tau", c("2.5%")]
 q2 <- ssCP_AR_period["Tau", c("97.5%")]
 tmean <- ssCP_AR_period["Tau", c("mean")]
 
-plot(JFK$series__raw, col = "orange", type = "p", lwd = 2.0, xlim = c(300, 350), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+plot(JFK$series__raw, col = "orange", type = "p", lwd = 2.0, xlim = c(250,300), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
 lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
 lines(c(1:468), ssCP_AR_period[1:468, "2.5%"], type = "l", lty = 2, col = "blue")
 lines(c(1:468), ssCP_AR_period[1:468, "97.5%"], type = "l", lty = 2, col = "blue")
@@ -857,6 +856,8 @@ for(t in 1:n){
 d[t] <- step(Tau - t)
 }
 
+#first observation
+
 J[1] <- d[1] + 1
 
 mu[1] <- alpha[J[1]] + beta[J[1]] * 1
@@ -873,7 +874,8 @@ LogLik[1] <- log(dnorm(x[1],meanARX[1],sinv[1]))
 
 xpred[1] ~ dnorm(meanARX[1],sinv[1])
 
-# AR(1)
+
+#AR(1) likelihood
 
 for(i in 2:n){
 
@@ -902,7 +904,7 @@ xpred[i] ~ dnorm(meanARX[i],sinv[i])
 pi <- 3.14159265358979
 w <- 2*pi/12
 
-# PRIORS
+# priors
 
 gamma ~ dnorm(0,1.0E-12)
 delta ~ dnorm(0,1.0E-12)
@@ -990,7 +992,7 @@ tmean <- ssCP_ARX["Tau", c("mean")]
 mu_rows    <- grep("^meanARX\\[", rownames(ssCP_ARX))
 xpred_rows <- grep("^xpred\\[", rownames(ssCP_ARX))
 
-plot(JFK$series__raw, col = "orange", type = "p", lwd = 2.0, ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
+plot(JFK$series__raw, col = "orange", type = "p", lwd = 2.0, xlim = c(0,50), ylim = c(min(JFK$series__raw) - 0.5, max(JFK$series__raw) + 0.5), xlab = "time", ylab = "Y")
 lines(c(1:468), JFK$series__raw, type = "l", col = "orange")
 lines(c(1:468), ssCP_ARX[mu_rows, "2.5%"], type = "l", lty = 2, col = "blue")
 lines(c(1:468), ssCP_ARX[mu_rows, "97.5%"], type = "l", lty = 2, col = "blue")
